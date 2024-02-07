@@ -1,0 +1,137 @@
+Main datacollection structure:
+
+VAR_GLOBAL
+	stOPCUA						: stOPCUA;	(*~(OPC:1:Available for OPC-clients) ~ (OPC_PROP[0005]:1: read-only) *)
+END_VAR
+VAR_GLOBAL PERSISTENT
+	stPersistOPCUA				: stPersistOPCUA; (*~(OPC:1:Available for OPC-clients) ~ (OPC_PROP[0005]:1: read-only) *)
+END_VAR
+VAR_GLOBAL CONSTANT
+	nNumberOfRobots				: INT := 1;
+	nNumberOfDaysKeptInMemory	: INT := 1;
+	nJobListsKeptInMemory		: INT := 1;
+	nNumberOfPanelsInMemory		: INT := 1; (* index starts from 0, if nNumber = 1 then real number is 2. PLC SUPS cant write long list of persistent variables nearing end of lifetime so if needs to be increased either persistent variables need to be saved seperately or data col moved to non persistent memory *)
+END_VAR
+
+Sub datacollection structures:
+
+TYPE stOpcUA :
+STRUCT
+	stVisionData 			: stVisionData;
+	stMachineData			: stMachineData; 
+	stTimeVariablesHourly	: stTimeVariablesHourly;
+END_STRUCT
+END_TYPE
+
+TYPE stPersistOpcUa :
+STRUCT
+	arrstPanelData					: ARRAY [0..nNumberOfPanelsInMemory] OF stPanelData;
+	arrstRobotData					: ARRAY [1..nNumberOfRobots] OF stDataColRobotData; (* maybe move to non persistent memory and save needed variables in different persistant variables *)
+	arrstTimeVariablesDaily			: ARRAY [0..nNumberOfDaysKeptInMemory] OF stTimeVariablesDaily; (* current day array = 0, previous day [1] *)
+END_STRUCT
+END_TYPE
+
+TYPE stVisionData :
+STRUCT
+	sVisionStatus				: STRING(50); 	(* Current Scanning state, 0 idle, started, stpped,  resumed, finished, scanning *)
+	dtTimestamp					: DT;			(* time stamp from wc200, might differ from plc clock *)
+	sOperatorId					: STRING(50);	(* Operator ID if name is given, not supported in all versions *)
+	sStationId					: STRING(50);	(* Station ID if name is given, not supported in all versions *)
+	nCurrentImageIndex			: INT;			(* if robots move in sync this might jump by number of robots when image taken *)
+	nNumberOfImagesInScanArea	: INT;			(* Total number of images in marked area *)
+	sStopSource					: STRING(50);	(* What stopped scan *)
+	dtCurrentScanCycleStarted	: DT;			(* when current cycle started, uses plc clock which can be seen in machine data *)
+END_STRUCT
+END_TYPE
+
+TYPE stMachineData :
+STRUCT
+	sMachineName					: STRING(50);
+	sMachineTime					: DT;
+	arrsFailureMessage				: ARRAY [0..10] OF STRING(255);
+	arrsWarningMessage				: ARRAY	[0..10]	OF STRING(255);
+	arrsInfoMessage					: ARRAY	[0..10]	OF STRING(255);
+	nNumRunningRobots				: UINT;				(* Number of working robots *)
+	arrfPortalEnergyConsumption		: ARRAY [0..23] OF REAL; (* portal energy consumption uses plc clock, stMachineData.sMachineData hours 0..23 *)
+	arrfRobotEnergyConsumption		: ARRAY [0..23] OF REAL; (* Robot energy consumption uses plc clock, stMachineData.sMachineData hours 0..23 *)
+	arrfWeldingEnergyConsumption	: ARRAY [0..23] OF REAL; (* Welding energy consumption uses plc clock, stMachineData.sMachineData hours 0..23 *)
+END_STRUCT
+END_TYPE
+
+TYPE stTimeVariablesHourly :
+STRUCT
+	arrtRobotRunningTime			: ARRAY [0..nNumberOfRobots,0..23] OF TIME; (* [robot,hour] Robot moving, robot 1..n(robots in station), Uses plc clock hours 0..23, array 0 is for any robot running*)
+	arrtRobotWeldingTime			: ARRAY [0..nNumberOfRobots,0..23] OF TIME; (* [robot,hour] ARC on robot 1..n(robots in station), Uses plc clock hours 0..23, array 0 is for any robot running *)
+	arrtPortalRunningTime			: ARRAY [0..23] OF TIME; (* portal is moving, Uses plc clock hours 0..23  *)
+	arrtScanningTime				: ARRAY [0..23] OF TIME;	(* scanning active, Uses plc clock hours 0..23, calculated from vision state. If program closed mid scan this will keep increasing *rare case* *)
+	arrtWaitingTime					: ARRAY [0..23] OF TIME; (* no job active, Uses plc clock hours 0..23  *)
+END_STRUCT
+END_TYPE
+
+TYPE stPanelData :
+STRUCT
+	sWorkpieceName					: STRING[50];		(* Panel ID from wc200 *)
+	stPanelWelds					: stWelds;			(* number of welds done on panel *)
+	stPanelWeldLength				: stWeldLength;		(* welded lenght on panel *)
+	arrstRobotWelds					: ARRAY [1..nNumberOfRobots] OF stWelds;
+	arrstRobotWeldLength				: ARRAY [1..nNumberOfRobots] OF stWeldLength;
+	arrstCurrentJobList					: ARRAY [0..nJobListsKeptInMemory] OF stJobList;		(* array 0 = current job que, welds/finsihed welds,seq id, progress, 1 previous... *)
+	dtPanelStartTime					: DT;				(* first message from wc200 (operator can send this by pressing "sendpanel start time" or when first weld finishes message is sent automaticly *)
+	dtUpdatingPanelEndTime			: DT;				(* timestamp from latest update on panel, uses PLC clock this can differ from operator pc clock. PLC clock can be checked from machinedata *)
+	dtPanelEndTime					: DT;				(* End time of panel, has value only when operator presses "send panel end time"*)
+	nPanelStatus						: USINT;			(* Indicates state of panel [%](0-100), calculated from EVERY possible weld on panel / finished welds (lenght), propably wont reach 100% *)
+	nRobotIndex						: USINT;			(* Robot number, that generated message. 0 if message was not created by robot *)
+
+END_STRUCT
+END_TYPE
+
+TYPE stWelds :
+STRUCT
+	nTotal		: INT;		(* pf + pb welds *)
+	nPf			: INT;		(* vertical *)
+	nPb			: INT;		(* Horizontal *)
+END_STRUCT
+END_TYPE
+
+TYPE stWeldLength :
+STRUCT
+	fTotal			: REAL;		(* pf + pb *)
+	fPf				: REAL;		(* vertical *)
+	fPb				: REAL;		(* horizontal *)
+END_STRUCT
+END_TYPE
+
+TYPE stDataColRobotData :
+STRUCT
+	bRunning					: BOOL; 	(* Robot program running *)
+	bWeldOn					: BOOL;		(* Robot is welding *)
+	bError						: BOOL;
+	bIdle						: BOOL;
+
+
+	arrstRobotWeldsDaily		: ARRAY [0..nNumberOfDaysKeptInMemory] OF stWelds; 		(* Current day always array [0] Welds daily, uses plc clock which can be checked from machinedata*)
+	arrstRobotWeldLengthDaily	: ARRAY [0..nNumberOfDaysKeptInMemory] OF stWeldLength; (* Current day always array [0] Welds daily, uses plc clock which can be checked from machinedata*)
+END_STRUCT
+END_TYPE
+
+TYPE stTimeVariablesDaily :
+STRUCT
+	arrtRobotDailyRunningTime		: ARRAY [0..nNumberOfRobots] OF TIME; (* Robot moving, robot 1..n(robots in station), array 0 is for any robot running *)
+	arrtRobotDailyWeldingTime		: ARRAY [0..nNumberOfRobots] OF TIME; (* ARC on robot 1..n(robots in station) array 0 is for any robot running*)
+	tPortalRunningTime				: TIME; (* portal is moving *)
+	tScanningTime					: TIME;	(* scanning active, calculated from vision state. If program closed mid scan this will keep increasing *rare case* *)
+	tWaitingTime					: TIME; (* no job active *)
+END_STRUCT
+END_TYPE
+
+TYPE stJoblist :
+STRUCT
+	dtStartTime					: DT;					(* timestamp when joblist was started, uses PLC clock this can differ from operator pc clock. PLC clock can be checked from machinedata *)
+	nJobListNumber				: UINT;					(* 0 = first joblist on panel, increases when stCurrentJoblist.seqID changes but panel name stays same *)
+	sJobListSeqId				: STRING(40);			(* Seq id is different string generated by WC200 program for each joblist, nJobListNumber can also be used *)
+	stTotalWelds				: stWelds;				(* Number of welds in joblist *)
+	stCompletedWelds			: stWelds;				(* finished welds in joblist *)
+	stTotalWeldLength			: stWeldLength;			(* Lenght of planned welds in joblist *)
+	stCompletedWeldLenght		: stWeldLength;			(* Completed WeldLenght in joblist *)
+END_STRUCT
+END_TYPE
