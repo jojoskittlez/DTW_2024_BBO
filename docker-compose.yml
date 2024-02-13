@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  python-opcua-client:
+    image: python:3.9
+    volumes:
+      - ./opcua_client:/app
+    working_dir: /app
+    command: python opcua_client.py
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: opcua_data
+      MYSQL_USER: opcua_user
+      MYSQL_PASSWORD: opcua_password
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mysql
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+
