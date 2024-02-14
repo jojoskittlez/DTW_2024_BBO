@@ -3,6 +3,7 @@ version: '3'
 services:
   python-opcua-client:
     image: python:3.9
+    restart: always
     volumes:
       - ./opcua_client:/app
     working_dir: /app
@@ -26,6 +27,7 @@ services:
 
   grafana:
     image: grafana/grafana:latest
+    restart: always
     ports:
       - "3000:3000"
     depends_on:
