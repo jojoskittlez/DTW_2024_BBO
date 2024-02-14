@@ -1,38 +1,34 @@
+from datetime import datetime
+
 import requests
 import json
 import mysql.connector
 
-# request prices
-response = requests.get('https://api.porssisahko.net/v1/latest-prices.json')
-results = response.json()
-
 
 def db_connection():
 
-# Establish a connection to the database
     connection = mysql.connector.connect(
-        host="127.0.0.1", #add docker container here
-        user="opcua_user",
-        password="opcua_password",
-        database="opcua_data"
+        host="212.132.69.137", #add docker container here
+        user="root",
+        password="example",
+        database="S7"
     )
 
-    # Creating a cursor object to execute SQL queries
     cursor = connection.cursor()
 
-    # Define your SQL query to insert data into your MariaDB table
-    # Replace 'your_table' and 'your_column' with your actual table and column names
-    sql_query = "INSERT INTO your_table (your_column) VALUES (%s)"
+    response = requests.get('https://api.porssisahko.net/v1/latest-prices.json')
+    data = response.json()
 
-    # Loop through the JSON data and insert it into the database
-    for key, value in results.items():
-        cursor.execute(sql_query, (json.dumps(value),))
+    for entry in data['prices']:
+        start_date_str = entry['startDate']
+        price = entry['price']
 
-    # Commit the changes to the database
-    connection.commit()
+        start_date = datetime.strptime(start_date_str, "%Y-%m-%dT%H:%M:%S.%fZ")
+        sql_query = "INSERT INTO tblEnergyPrices (start_date, price) VALUES (%s, %s);"
+        cursor.execute(sql_query, (start_date, price))
 
-    # Close the cursor and connection
     cursor.close()
+    connection.commit()
     connection.close()
 
 
