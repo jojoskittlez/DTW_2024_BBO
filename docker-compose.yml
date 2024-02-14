@@ -13,11 +13,16 @@ services:
   mysql:
     image: mysql:5.7
     restart: always
+    ports:
+      - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: example
       MYSQL_DATABASE: opcua_data
       MYSQL_USER: opcua_user
       MYSQL_PASSWORD: opcua_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+
 
   grafana:
     image: grafana/grafana:latest
@@ -28,3 +33,5 @@ services:
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
 
+volumes:
+  mysql_data:
