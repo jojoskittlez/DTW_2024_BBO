@@ -8,9 +8,13 @@ import mysql.connector
 def db_connection():
 
     connection = mysql.connector.connect(
-        host="212.132.69.137", #add docker container here
-        user="root",
-        password="example",
+        #host="212.132.69.137",
+        #user="root",
+        #password="example",
+
+        host="192.168.0.112",
+        user="pi",
+        password="123456789",
         database="S7"
     )
 
