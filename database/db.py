@@ -7,8 +7,8 @@ def main():
         #password="example"
 
         host="192.168.0.112",
-        user="",
-        password=""
+        user="pi",
+        password="123456789"
     )
 
     mycursor = mydb.cursor()
