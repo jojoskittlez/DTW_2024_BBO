@@ -2,8 +2,8 @@ import asyncio
 
 from asyncua import Client
 
-url = "opc.tcp://localhost:4840/freeopcua/server/"
-namespace = "OPCUA_S7_DTW"
+url = "opc.tcp://192.168.0.100:4334/UA/Simulator"
+# namespace = "http://examples.freeopcua.github.io"
 
 
 async def main():
@@ -11,20 +11,25 @@ async def main():
     print(f"Connecting to {url} ...")
     async with Client(url=url) as client:
         # Find the namespace index
-        nsidx = await client.get_namespace_index(namespace)
-        print(f"Namespace Index for '{namespace}': {nsidx}")
+        #nsidx = await client.get_namespace_index(namespace)
+        #print(f"Namespace Index for '{namespace}': {nsidx}")
 
         # Get the variable node for read / write
+        #var = await client.nodes.root.get_children()
+        #print(var)
+        child_var = await client.nodes.objects.get_children(32)
+        print(child_var)
+        ref_var = await client.nodes.objects.get_references()
+        print(ref_var)
 
-        # idfk man we probably shoud iterate over all the data thingies we get and have the added here automatically
-        # no idea how tho
-        # pls help
-        # i'm suffering
-        var = await client.nodes.root.get_child(
-            f"0:st_vision_data/{nsidx}:stVisionData/{nsidx}:sVisionStatus"
-        )
-        value = await var.read_value()
-        print(f"Value of MyVariable ({var}): {value}")
+        #for i in child_var:
+        #    try:
+        #        client.nodes.getvalue()
+        #    except:
+        #        print("idk man")
+
+        #value = await var.read_value()
+        #print(f"Value of MyVariable ({var}): {value}")
 
         #new_value = value - 50
         #print(f"Setting value of MyVariable to {new_value} ...")
@@ -37,3 +42,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+# get child - nodeid 
