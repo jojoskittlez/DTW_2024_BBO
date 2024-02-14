@@ -34,17 +34,9 @@ async def main():
     async with Client(url=url) as client:
 
         childs = await client.nodes.objects.get_children()
-        print(childs)
-        a = await childs[2].get_children()
-        print(a)
-        b = await a[0].get_children()
-        print(b)
-        c = await b[0].get_children()
-        print(c)
-        d = await c[0].get_children()
-        print(d)
-        e = await d[0].read_value()
-        print(e)
+
+        counter_status = await childs[2].get_children()[0].get_children()[0].get_children()[0].get_children()[0].read_value()
+
 
 
 
@@ -88,7 +80,7 @@ if __name__ == "__main__":
     except:
         data = {
             "status": "running",
-            "engery": "10",
+            "energy": "10",
         }
 
         insert_into_database(host="localhost:3306", database="opcua_data", user="opcua_user", password="opcua_password",
