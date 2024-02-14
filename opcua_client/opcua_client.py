@@ -1,4 +1,6 @@
+import json
 import os
+from datetime import datetime
 
 try:
     import asyncio
@@ -28,16 +30,51 @@ from mysql.connector import Error
 url = "opc.tcp://192.168.88.3:4840"
 
 
-async def main():
+#async def main():
+#
+#    print(f"Connecting to {url} ...")
+#    async with Client(url=url) as client:
+#
+#        childs = await client.nodes.objects.get_children()
+#
+#        counter_status = await childs[2].get_children()[0].get_children()[0].get_children()[0].get_children()[0].read_value()
 
-    print(f"Connecting to {url} ...")
-    async with Client(url=url) as client:
+def main():
 
-        childs = await client.nodes.objects.get_children()
+    connection = mysql.connector.connect(
+        host="212.132.69.137",
+        user="root",
+        password="example",
 
-        counter_status = await childs[2].get_children()[0].get_children()[0].get_children()[0].get_children()[0].read_value()
+        #host="192.168.0.112",
+        #user="pi",
+        #password="123456789",
+
+        database="S7"
+    )
 
 
+    cursor = connection.cursor()
+
+    file_path = "..\\test_data\\machine_mock_data.json"
+
+    with open(file_path, 'r') as file:
+        json_data = file.read()
+
+    data = json.loads(json_data)
+
+    for val in data:
+        data_retrieved_str = val['timestamp']
+        energy_usage = val['energy_usage']
+        machine_status = val['machine_status']
+
+        data_retrieved = datetime.strptime(data_retrieved_str, "%Y-%m-%dT%H:%M:%S.%fZ")
+        sql_query = "INSERT INTO tblData (data_retrieved, energy_usage, machine_status) VALUES (%s, %s, %s);"
+        cursor.execute(sql_query, (data_retrieved, energy_usage, machine_status))
+
+    cursor.close()
+    connection.commit()
+    connection.close()
 
 
 def insert_into_database(host, database, user, password, table, data):
@@ -75,13 +112,13 @@ def insert_into_database(host, database, user, password, table, data):
 
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except:
-        data = {
-            "status": "running",
-            "energy": "10",
-        }
-
-        insert_into_database(host="localhost:3306", database="opcua_data", user="opcua_user", password="opcua_password",
-                             table="test", data=data)
+    #try:
+        main()
+    #except:
+    #    data = {
+    #        "status": "running",
+    #        "energy": "10",
+    #    }
+#
+    #    insert_into_database(host="localhost:3306", database="opcua_data", user="opcua_user", password="opcua_password",
+    #                         table="test", data=data)

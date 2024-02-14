@@ -8,13 +8,13 @@ import mysql.connector
 def db_connection():
 
     connection = mysql.connector.connect(
-        #host="212.132.69.137",
-        #user="root",
-        #password="example",
+        host="212.132.69.137",
+        user="root",
+        password="example",
 
-        host="192.168.0.112",
-        user="pi",
-        password="123456789",
+        #host="192.168.0.112",
+        #user="pi",
+        #password="123456789",
         database="S7"
     )
 
@@ -23,9 +23,9 @@ def db_connection():
     response = requests.get('https://api.porssisahko.net/v1/latest-prices.json')
     data = response.json()
 
-    for entry in data['prices']:
-        start_date_str = entry['startDate']
-        price = entry['price']
+    for val in data['prices']:
+        start_date_str = val['startDate']
+        price = val['price']
 
         start_date = datetime.strptime(start_date_str, "%Y-%m-%dT%H:%M:%S.%fZ")
         sql_query = "INSERT INTO tblEnergyPrices (start_date, price) VALUES (%s, %s);"
