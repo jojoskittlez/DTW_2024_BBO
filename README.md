@@ -8,4 +8,4 @@ The results consist of:
 - An OPC UA client (https://github.com/FreeOpcUa/opcua-asyncio)
 - A MySQL database
 - A Grafana dasboard for visualization purposes
-- Additional scrips, bits and bops for smaler features and utility
+- Additional scrips, bits and bops for smaller features and utility
